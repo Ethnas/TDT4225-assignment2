@@ -1,4 +1,3 @@
-import javax.xml.transform.Result;
 import java.sql.*;
 import java.util.List;
 
@@ -6,7 +5,7 @@ public class DbConnector {
     Connection connection;
     String url = "jdbc:mysql://192.168.27.128:3306/assignment2";
     String username = "erlend";
-    String password = "solbakk1";
+    String password = "";
     final String QUERYING = "Querying: ";
     private static final String CREATE_USER_TABLE = "CREATE TABLE IF NOT EXISTS User ("
             + "id INT NOT NULL PRIMARY KEY,"
