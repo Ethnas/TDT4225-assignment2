@@ -1,4 +1,5 @@
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.List;
 
 public class DbConnector {
@@ -6,7 +7,7 @@ public class DbConnector {
     String url = "jdbc:mysql://192.168.27.128:3306/assignment2";
     String username = "erlend";
     String password = "";
-    final String QUERYING = "Querying: ";
+    static final String QUERYING = "Querying: ";
     private static final String CREATE_USER_TABLE = "CREATE TABLE IF NOT EXISTS User ("
             + "id INT NOT NULL PRIMARY KEY,"
             + "has_labels BOOLEAN NOT NULL )";
@@ -115,7 +116,7 @@ public class DbConnector {
         Statement stmt = null;
         try {
             stmt = connection.createStatement();
-            String sql = "DROP TABLE IF EXISTS TrackPoint";
+            String sql = "DROP TABLE IF EXISTS TrackPoint ";
             stmt.executeUpdate(sql);
         } catch (SQLException throwables) {
             throwables.printStackTrace();
@@ -130,6 +131,7 @@ public class DbConnector {
         }
     }
 
+    //Inserts a user in the User table
     public void createUser(User user) {
         PreparedStatement stmt = null;
         try {
@@ -151,6 +153,7 @@ public class DbConnector {
         }
     }
 
+    //Inserts an activity in the Activity table
     public int createActivity(Activity activity) {
         ResultSet rs = null;
         int returnValue = -1;
@@ -184,6 +187,7 @@ public class DbConnector {
         return returnValue;
     }
 
+    // Does a batch insert of all the trackpoints in the given list to the Trackpoint table
     public void createTrackPoints(List<TrackPoint> trackPoints) {
         PreparedStatement stmt = null;
         try {
@@ -354,8 +358,13 @@ public class DbConnector {
         Statement stmt = null;
         try {
             stmt = connection.createStatement();
-            String sql = "";
-            stmt.executeUpdate(sql);
+            String sql = "SELECT COUNT(A.user_id) FROM Activity A INNER JOIN\n" +
+                    "    (SELECT DISTINCT T1.activity_id as T1aId, T2.activity_id as T2aId FROM Trackpoint T1 CROSS JOIN Trackpoint T2\n" +
+                    "    WHERE (ST_Distance_Sphere(POINT(T1.lon, T1.lat), POINT(T2.lon, T2.lat)) <= 100)\n" +
+                    "      AND (ABS(TIMESTAMPDIFF(SECOND, T1.date_time, T2.date_time)) <= 60) AND T1.activity_id <> T2.activity_id) AS T ON A.id = T.T1aId";
+            ResultSet rs = stmt.executeQuery(sql);
+            System.out.println(QUERYING + sql);
+            DBTablePrinter.printResultSet(rs);
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         } finally {
@@ -424,7 +433,7 @@ public class DbConnector {
         Statement stmt = null;
         try {
             stmt = connection.createStatement();
-            String sql = "SELECT EXTRACT(YEAR_MONTH FROM start_date_time) date_YYYYMM, COUNT(*) number_of FROM Activity GROUP BY EXTRACT(YEAR_MONTH FROM start_date_time) ORDER BY number_of DESC";
+            String sql = "SELECT EXTRACT(YEAR_MONTH FROM start_date_time) date_YYYYMM, COUNT(*) number_of FROM Activity GROUP BY EXTRACT(YEAR_MONTH FROM start_date_time) ORDER BY number_of DESC LIMIT 1";
             ResultSet rs = stmt.executeQuery(sql);
             System.out.println(QUERYING + sql);
             DBTablePrinter.printResultSet(rs);
@@ -460,12 +469,32 @@ public class DbConnector {
         }
     }
 
+    // Find the total distance (in km) walked in 2008, by user with id=112.
     public void solveTask10() {
         Statement stmt = null;
         try {
             stmt = connection.createStatement();
-            String sql = "";
-            stmt.executeUpdate(sql);
+            String sql = "SELECT * FROM Trackpoint T INNER JOIN (SELECT * FROM Activity A WHERE A.user_id = 112 AND EXTRACT(YEAR FROM A.start_date_time) = 2008 AND A.transportation_mode = 'walk') A ON T.activity_id = A.id\n" +
+                    "WHERE (T.date_time = A.start_date_time OR T.date_time = A.end_date_time)";
+            ResultSet rs = stmt.executeQuery(sql);
+            List<TrackPoint> trackPoints = new ArrayList<>();
+            while (rs.next()) {
+                TrackPoint trackPoint = new TrackPoint();
+                trackPoint.setActivityId(rs.getInt(2));
+                trackPoint.setLat(rs.getDouble(3));
+                trackPoint.setLon(rs.getDouble(4));
+                trackPoints.add(trackPoint);
+            }
+            double distance = 0;
+            if (!trackPoints.isEmpty()) {
+                for (int i = 0; i < trackPoints.size() - 2; i++) {
+                    if (trackPoints.get(i).activityId == trackPoints.get(i + 1).activityId) {
+                        distance += calculateDistanceInKilometer(trackPoints.get(i).lat, trackPoints.get(i).lon,
+                                trackPoints.get(i + 1).lat, trackPoints.get(i + 1).lon);
+                    }
+                }
+            }
+            System.out.println("Total distance walked by user 112 in 2008 is " + distance);
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         } finally {
@@ -529,6 +558,25 @@ public class DbConnector {
             }
             System.out.println("");
         }
+    }
+
+    //Copied from
+    //https://stackoverflow.com/questions/27928/calculate-distance-between-two-latitude-longitude-points-haversine-formula/12600225#12600225
+    public final static double AVERAGE_RADIUS_OF_EARTH_KM = 6371;
+    public double calculateDistanceInKilometer(double userLat, double userLng,
+                                            double venueLat, double venueLng) {
+
+        double latDistance = Math.toRadians(userLat - venueLat);
+        double lngDistance = Math.toRadians(userLng - venueLng);
+
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(userLat)) * Math.cos(Math.toRadians(venueLat))
+                * Math.sin(lngDistance / 2) * Math.sin(lngDistance / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return AVERAGE_RADIUS_OF_EARTH_KM * c;
+
     }
 
 }

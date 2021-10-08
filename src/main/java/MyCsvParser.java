@@ -20,6 +20,7 @@ public class MyCsvParser {
         myFileReader.getLabelIds();
     }
 
+    // Reads data from csv files line by line and extracts data for users, activities, and trackpoints
     public void readDataLineByLine(List<Path> paths, Path parentPath) {
         db.getConnection();
         User user = new User();
@@ -81,6 +82,7 @@ public class MyCsvParser {
         db.closeConnection();
     }
 
+    //Sets the start and end time for an activity
     private void setActivityStartAndEndTime(List<TrackPoint> trackPoints, Activity activity) throws ParseException {
         TrackPoint firstTrackPoint = trackPoints.get(0);
         TrackPoint lastTrackPoint = trackPoints.get(trackPoints.size() - 1);
@@ -95,6 +97,7 @@ public class MyCsvParser {
         activity.setEndDateTime(timestamp);
     }
 
+    //Checks if the start and end time for an activity matches with the label
     private String checkStartEndTimesMatchLabel(Activity activity, Path path) throws ParseException {
         List<String> labels = myFileReader.getLabelsTxt(path);
         List<String> matches = labels.stream()

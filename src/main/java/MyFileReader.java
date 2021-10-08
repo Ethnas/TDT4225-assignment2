@@ -1,5 +1,4 @@
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -13,6 +12,7 @@ public class MyFileReader {
     List<String> labeledIds = new ArrayList<>();
     Path path = Paths.get("dataset\\dataset");
 
+    // Finds all the files with the provided file extension and returns their paths
     public List<Path> findByFileExtension(Path path, String fileExtension) throws IOException {
         if (!Files.isDirectory(path)) {
             throw new IllegalArgumentException("Path must be a directory!");
@@ -27,6 +27,7 @@ public class MyFileReader {
         return result;
     }
 
+    //Finds the user directories that have a numeric name
     public List<Path> findUserDirectories(Path path) throws IOException {
         List<Path> result;
         try (Stream<Path> walk = Files.walk(path)) {
@@ -37,6 +38,7 @@ public class MyFileReader {
         return result;
     }
 
+    //Gets the IDs of the users with labeled activities
     public void getLabelIds() {
         try (Stream<Path> pathStream = Files.find(path,
                 1,
@@ -54,7 +56,7 @@ public class MyFileReader {
     }
 
     /**
-     * Reads the labels.txt files at the provided path adn returns a list with all the rows of the document
+     * Reads the labels.txt files at the provided path and returns a list containing all the rows of the document
      * @param path the path where the labels.txt file is found
      * @return a list containing the rows of the document
      */

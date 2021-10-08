@@ -6,7 +6,7 @@ public class Main {
 //        csv.readActivityFiles();
         DbConnector dbConnector = new DbConnector();
         dbConnector.getConnection();
-        dbConnector.solveTask1();
+        dbConnector.solveTask10();
         dbConnector.closeConnection();
 
     }
